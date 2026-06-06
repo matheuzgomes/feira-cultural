@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Quiz cultural do Colégio Euclides da Cunha."
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>Saberes da Floresta | Desafio Euclides</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <svg
+      class="forest-backdrop"
+      viewBox="0 0 1600 1000"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#092d25" />
+          <stop offset="0.48" stop-color="#315f3c" />
+          <stop offset="1" stop-color="#d18a48" />
+        </linearGradient>
+        <linearGradient id="trunk" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#392014" />
+          <stop offset="0.5" stop-color="#84512d" />
+          <stop offset="1" stop-color="#2c1a12" />
+        </linearGradient>
+        <linearGradient id="straw" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#f0c56c" />
+          <stop offset="0.55" stop-color="#b56b32" />
+          <stop offset="1" stop-color="#6e3b23" />
+        </linearGradient>
+        <radialGradient id="sunsetGlow">
+          <stop offset="0" stop-color="#ffd987" stop-opacity=".6" />
+          <stop offset="1" stop-color="#ffd987" stop-opacity="0" />
+        </radialGradient>
+        <filter id="softShadow" x="-30%" y="-30%" width="160%" height="180%">
+          <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#020b07" flood-opacity=".55" />
+        </filter>
+        <filter id="blur"><feGaussianBlur stdDeviation="18" /></filter>
+        <g id="leafCluster">
+          <ellipse cx="0" cy="5" rx="88" ry="62" fill="#174c2b" />
+          <ellipse cx="-58" cy="34" rx="68" ry="54" fill="#205f31" />
+          <ellipse cx="64" cy="30" rx="76" ry="58" fill="#123f25" />
+          <ellipse cx="-12" cy="-48" rx="70" ry="58" fill="#2d7138" />
+          <ellipse cx="34" cy="-35" rx="62" ry="49" fill="#245e31" />
+        </g>
+        <g id="tree">
+          <path d="M-30 520 C-12 390 -48 278 -18 128 C-4 60 10 30 25 0 C38 110 29 234 55 350 C70 417 67 478 74 520Z" fill="url(#trunk)" />
+          <path d="M3 230 C-58 183 -94 142 -124 82" fill="none" stroke="#4d2c1b" stroke-width="22" stroke-linecap="round" />
+          <path d="M27 180 C80 124 106 90 120 40" fill="none" stroke="#4d2c1b" stroke-width="20" stroke-linecap="round" />
+          <use href="#leafCluster" x="-92" y="45" />
+          <use href="#leafCluster" x="50" y="10" transform="scale(.88)" />
+          <use href="#leafCluster" x="0" y="-66" transform="scale(1.08)" />
+          <path d="M103 44 C133 145 80 201 116 306 C126 336 126 362 111 387" fill="none" stroke="#66883e" stroke-width="6" stroke-linecap="round" />
+          <path d="M111 385 q-32 2 -27 34 q28 2 27-34" fill="#84a84b" />
+        </g>
+        <g id="hut">
+          <path d="M-96 28 Q0 -58 96 28 L81 122 H-81Z" fill="#8b522d" />
+          <path d="M-118 38 L0 -80 L118 38Z" fill="url(#straw)" />
+          <path d="M-102 31 L0 -67 L102 31 M-76 31 L0 -54 L76 31 M-48 31 L0 -39 L48 31" fill="none" stroke="#704021" stroke-width="5" opacity=".7" />
+          <path d="M-82 46 H82 M-78 68 H78 M-75 91 H75" stroke="#c68442" stroke-width="4" opacity=".6" />
+          <path d="M-27 122 V70 Q0 38 27 70 V122Z" fill="#17130d" />
+          <ellipse cx="0" cy="126" rx="108" ry="13" fill="#07130d" opacity=".55" />
+        </g>
+      </defs>
+
+      <rect width="1600" height="1000" fill="url(#sky)" />
+      <circle cx="790" cy="330" r="300" fill="url(#sunsetGlow)" />
+      <path d="M0 510 Q170 395 350 500 T720 470 T1080 480 T1600 430 V1000 H0Z" fill="#17442b" opacity=".7" />
+      <path d="M0 650 Q220 540 430 620 T860 590 T1260 625 T1600 560 V1000 H0Z" fill="#0b2e1d" />
+      <ellipse cx="800" cy="735" rx="660" ry="120" fill="#bacb9c" opacity=".08" filter="url(#blur)" />
+
+      <g filter="url(#softShadow)">
+        <use href="#tree" transform="translate(80 235) scale(1.28)" />
+        <use href="#tree" transform="translate(1510 250) scale(-1.22 1.22)" />
+        <use href="#tree" transform="translate(310 390) scale(.72)" opacity=".72" />
+        <use href="#tree" transform="translate(1300 405) scale(-.7 .7)" opacity=".7" />
+        <use href="#tree" transform="translate(525 430) scale(.55)" opacity=".48" />
+        <use href="#tree" transform="translate(1075 430) scale(-.55 .55)" opacity=".48" />
+      </g>
+
+      <path d="M0 823 Q185 760 330 830 Q490 900 670 835 Q845 773 1024 842 Q1210 914 1600 805 V1000 H0Z" fill="#082419" />
+      <path d="M0 905 Q240 825 475 914 T920 900 T1290 914 T1600 875 V1000 H0Z" fill="#061912" />
+
+      <g filter="url(#softShadow)">
+        <use href="#hut" transform="translate(250 740) scale(1.05)" />
+        <use href="#hut" transform="translate(800 786) scale(.78)" opacity=".82" />
+        <use href="#hut" transform="translate(1340 752) scale(.96)" />
+      </g>
+
+      <g fill="#39743b">
+        <ellipse cx="50" cy="875" rx="34" ry="100" transform="rotate(-28 50 875)" />
+        <ellipse cx="116" cy="895" rx="30" ry="94" transform="rotate(25 116 895)" />
+        <ellipse cx="1495" cy="882" rx="34" ry="105" transform="rotate(28 1495 882)" />
+        <ellipse cx="1552" cy="898" rx="28" ry="91" transform="rotate(-24 1552 898)" />
+      </g>
+
+      <g class="forest-backdrop__fireflies" fill="#ffe08c">
+        <circle cx="370" cy="610" r="4" /><circle cx="440" cy="535" r="3" />
+        <circle cx="1160" cy="575" r="4" /><circle cx="1240" cy="635" r="3" />
+        <circle cx="650" cy="665" r="3" /><circle cx="1010" cy="690" r="4" />
+      </g>
+    </svg>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Desafio Euclides - início">
+          <span class="brand__mark" aria-hidden="true">E</span>
+          <span class="brand__text">
+            <strong>Saberes da Floresta</strong>
+            <small>Euclides • Feira Cultural</small>
+          </span>
+        </a>
+
+        <div class="scoreboard" aria-label="Placar">
+          <span class="scoreboard__label">Pontos</span>
+          <strong id="score">000</strong>
+        </div>
+      </header>
+
+      <section class="quiz-card" id="quiz-card" aria-live="polite">
+        <div class="quiz-card__shine" aria-hidden="true"></div>
+
+        <div class="round-info">
+          <span class="eyebrow">Povos indígenas do Brasil</span>
+          <span class="question-count" id="question-count">Pergunta 1 de 1</span>
+        </div>
+
+        <div class="progress" aria-label="Progresso do quiz">
+          <div class="progress__bar" id="progress-bar"></div>
+        </div>
+
+        <div class="question-panel">
+          <span class="question-panel__icon" aria-hidden="true">?</span>
+          <h1 id="question" tabindex="-1">Carregando pergunta...</h1>
+        </div>
+
+        <div class="answers" id="answers"></div>
+
+        <div class="action-row">
+          <p class="feedback" id="feedback" role="status">
+            Escolha uma alternativa para continuar.
+          </p>
+          <button class="confirm-button" id="confirm-button" type="button" disabled>
+            <span id="button-label">Confirmar resposta</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="result-card" id="result-card" hidden aria-live="polite">
+        <span class="result-card__kicker">Jornada concluída</span>
+        <div class="result-card__seal" aria-hidden="true">◆</div>
+        <h1>Mandou muito bem!</h1>
+        <p id="result-message"></p>
+        <div class="result-score">
+          <strong id="final-score">0</strong>
+          <span>pontos</span>
+        </div>
+        <button class="confirm-button" id="restart-button" type="button">
+          Jogar novamente <span aria-hidden="true">↻</span>
+        </button>
+      </section>
+
+      <footer class="footer-note">
+        <span aria-hidden="true">◆</span>
+        Conhecer • respeitar • preservar
+        <span aria-hidden="true">◆</span>
+      </footer>
+    </main>
+
+    <button class="video-dock" id="video-dock" type="button" hidden>
+      <span class="video-dock__play" aria-hidden="true">▶</span>
+      <span class="video-dock__text">
+        <strong>Vídeo especial</strong>
+        <small>Clique para rever</small>
+      </span>
+    </button>
+
+    <div
+      class="video-modal"
+      id="video-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="video-title"
+      hidden
+    >
+      <div class="video-modal__backdrop"></div>
+      <section class="video-modal__panel">
+        <div class="video-modal__heading">
+          <div>
+            <span>Momento cultural</span>
+            <h2 id="video-title">Saberes em movimento</h2>
+          </div>
+          <button
+            class="video-modal__close"
+            id="video-close"
+            type="button"
+            aria-label="Fechar e minimizar vídeo"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="video-frame">
+          <div id="youtube-player"></div>
+          <div class="video-frame__loading" id="video-loading">
+            <span class="video-frame__spinner" aria-hidden="true"></span>
+            <p id="video-status">Preparando vídeo...</p>
+            <a
+              class="video-frame__fallback"
+              id="video-fallback"
+              href="https://www.youtube.com/shorts/MlJ6IjZYWyI"
+              target="_blank"
+              rel="noreferrer"
+              hidden
+            >
+              Assistir no YouTube
+            </a>
+          </div>
+        </div>
+
+        <div class="video-modal__footer">
+          <p>Feche quando quiser. O vídeo ficará disponível no canto da tela.</p>
+        </div>
+      </section>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
