@@ -2,12 +2,22 @@
 const questions = [
   {
     question: "Todos os povos indígenas do Brasil são iguais?",
-    answers: ["Sim", "Não"],
+    answers: [
+      "Sim, todos possuem os mesmos costumes",
+      "Não, existem diferentes povos e culturas",
+      "Sim, todos falam a mesma língua",
+      "Não existem povos indígenas no Brasil",
+    ],
     correctAnswer: 1,
   },
   {
     question: "Os povos indígenas possuem culturas entre si?",
-    answers: ["Sim", "Não"],
+    answers: [
+      "Sim, cada povo pode ter sua própria cultura",
+      "Não, todos seguem os mesmos costumes",
+      "Somente os povos que vivem em cidades",
+      "Somente os povos da região Norte",
+    ],
     correctAnswer: 0,
   },
   {
@@ -17,7 +27,12 @@ const questions = [
   },
   {
     question: "É verdade que indígenas não podem usar celular ou internet?",
-    answers: ["Sim", "Não",],
+    answers: [
+      "Sim, o uso de tecnologia é proibido",
+      "Não, eles podem utilizar tecnologias",
+      "Somente podem usar rádio",
+      "Somente podem usar internet na escola",
+    ],
     correctAnswer: 1,
   },
   {
@@ -60,8 +75,12 @@ const questions = [
 const scorePerQuestion = 100;
 const answerLetters = ["A", "B", "C", "D"];
 const rankingStorageKey = "saberesDaFloresta.ranking.v1";
+const soundStorageKey = "saberesDaFloresta.soundEnabled.v1";
+const musicVolumeStorageKey = "saberesDaFloresta.musicVolume.v1";
 const rankingLimit = 5;
 
+const attractCard = document.querySelector("#attract-card");
+const startExperienceButton = document.querySelector("#start-experience-button");
 const introCard = document.querySelector("#intro-card");
 const playerForm = document.querySelector("#player-form");
 const playerNameInput = document.querySelector("#player-name");
@@ -74,6 +93,12 @@ const questionCountElement = document.querySelector("#question-count");
 const progressBar = document.querySelector("#progress-bar");
 const scoreElement = document.querySelector("#score");
 const timerElement = document.querySelector("#timer");
+const gameStats = document.querySelector("#game-stats");
+const soundToggle = document.querySelector("#sound-toggle");
+const soundIcon = document.querySelector("#sound-icon");
+const streakBadge = document.querySelector("#streak-badge");
+const streakCount = document.querySelector("#streak-count");
+const streakCelebration = document.querySelector("#streak-celebration");
 const feedbackElement = document.querySelector("#feedback");
 const confirmButton = document.querySelector("#confirm-button");
 const buttonLabel = document.querySelector("#button-label");
@@ -81,6 +106,7 @@ const resultMessage = document.querySelector("#result-message");
 const finalScore = document.querySelector("#final-score");
 const finalTime = document.querySelector("#final-time");
 const rankingList = document.querySelector("#ranking-list");
+const certificateButton = document.querySelector("#certificate-button");
 const restartButton = document.querySelector("#restart-button");
 const appShell = document.querySelector(".app-shell");
 const videoModal = document.querySelector("#video-modal");
@@ -89,14 +115,31 @@ const videoDock = document.querySelector("#video-dock");
 const videoLoading = document.querySelector("#video-loading");
 const videoStatus = document.querySelector("#video-status");
 const videoFallback = document.querySelector("#video-fallback");
+const musicPanel = document.querySelector("#music-panel");
+const musicFallback = document.querySelector("#music-fallback");
+const musicControls = document.querySelector("#music-controls");
+const musicToggle = document.querySelector("#music-toggle");
+const musicToggleIcon = document.querySelector("#music-toggle-icon");
+const musicVolume = document.querySelector("#music-volume");
+const musicVolumeValue = document.querySelector("#music-volume-value");
+const musicEqualizer = document.querySelector("#music-equalizer");
+const certificateModal = document.querySelector("#certificate-modal");
+const certificateCloseButton = document.querySelector("#certificate-close");
+const certificateName = document.querySelector("#certificate-name");
+const certificateHits = document.querySelector("#certificate-hits");
+const certificateScore = document.querySelector("#certificate-score");
+const certificateTime = document.querySelector("#certificate-time");
+const certificateDate = document.querySelector("#certificate-date");
 
 const youtubeVideoId = "MlJ6IjZYWyI";
+const backgroundMusicVideoId = "8kQZHYbZkLs";
 const canEmbedYouTube = ["http:", "https:"].includes(window.location.protocol);
 
 let currentQuestionIndex = 0;
 let selectedAnswerIndex = null;
 let score = 0;
 let answerWasChecked = false;
+let currentStreak = 0;
 let playerName = "";
 let gameInProgress = false;
 let elapsedTimeMs = 0;
@@ -105,8 +148,230 @@ let timerIntervalId = null;
 let timerWasRunningBeforeVideo = false;
 let youtubePlayer = null;
 let youtubePlayerReady = false;
+let musicPlayer = null;
+let musicPlayerReady = false;
+let musicShouldPlay = false;
+let musicIsPlaying = false;
+let musicPausedForVideo = false;
+let musicVolumeLevel = loadMusicVolume();
 let videoHasOpened = false;
 let pendingQuestionAdvance = false;
+let audioContext = null;
+let soundEnabled = loadSoundPreference();
+let lastResult = null;
+
+function loadSoundPreference() {
+  try {
+    return localStorage.getItem(soundStorageKey) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+function saveSoundPreference() {
+  try {
+    localStorage.setItem(soundStorageKey, String(soundEnabled));
+  } catch {
+    // Sound remains usable for the current session when storage is unavailable.
+  }
+}
+
+function loadMusicVolume() {
+  try {
+    const savedVolume = localStorage.getItem(musicVolumeStorageKey);
+    const storedVolume = Number(savedVolume);
+    return savedVolume !== null
+      && Number.isFinite(storedVolume)
+      && storedVolume >= 0
+      && storedVolume <= 100
+      ? storedVolume
+      : 30;
+  } catch {
+    return 30;
+  }
+}
+
+function saveMusicVolume() {
+  try {
+    localStorage.setItem(musicVolumeStorageKey, String(musicVolumeLevel));
+  } catch {
+    // The selected volume remains active for the current session.
+  }
+}
+
+function updateMusicControls() {
+  musicVolume.value = String(musicVolumeLevel);
+  musicVolumeValue.textContent = `${musicVolumeLevel}%`;
+  musicToggle.setAttribute("aria-pressed", String(musicShouldPlay));
+  musicToggle.setAttribute(
+    "aria-label",
+    musicShouldPlay ? "Pausar música" : "Tocar música",
+  );
+  musicToggleIcon.textContent = musicShouldPlay ? "Ⅱ" : "▶";
+  musicEqualizer.classList.toggle("is-playing", musicIsPlaying);
+}
+
+function showMusicFallback(message) {
+  musicPlayerReady = false;
+  musicShouldPlay = false;
+  musicIsPlaying = false;
+  document.querySelector("#music-player-frame").hidden = true;
+  musicFallback.querySelector("p").textContent = message;
+  musicFallback.hidden = false;
+  musicControls.hidden = true;
+  updateMusicControls();
+}
+
+function playBackgroundMusic() {
+  musicShouldPlay = true;
+  musicPanel.hidden = false;
+  updateMusicControls();
+
+  if (musicPlayerReady && videoModal.hidden) {
+    musicPlayer.setVolume(musicVolumeLevel);
+    musicPlayer.playVideo();
+  }
+}
+
+function pauseBackgroundMusic({ preserveIntent = false } = {}) {
+  if (!preserveIntent) musicShouldPlay = false;
+  musicIsPlaying = false;
+  if (musicPlayerReady) musicPlayer.pauseVideo();
+  updateMusicControls();
+}
+
+function updateSoundToggle() {
+  soundToggle.setAttribute("aria-pressed", String(soundEnabled));
+  soundToggle.setAttribute(
+    "aria-label",
+    soundEnabled ? "Desativar efeitos sonoros" : "Ativar efeitos sonoros",
+  );
+  soundIcon.textContent = soundEnabled ? "♪" : "×";
+}
+
+function ensureAudioContext() {
+  if (!soundEnabled) return null;
+
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+
+  audioContext ??= new AudioContextClass();
+  if (audioContext.state === "suspended") audioContext.resume();
+  return audioContext;
+}
+
+function playTone(frequency, startDelay, duration, type = "sine", volume = 0.05) {
+  const context = ensureAudioContext();
+  if (!context) return;
+
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  const startTime = context.currentTime + startDelay;
+  const endTime = startTime + duration;
+
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, startTime);
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, endTime);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(startTime);
+  oscillator.stop(endTime + 0.02);
+}
+
+function playSound(sound) {
+  if (!soundEnabled) return;
+
+  const patterns = {
+    start: [[392, 0, 0.09], [523, 0.1, 0.11], [659, 0.22, 0.14]],
+    correct: [[523, 0, 0.08], [659, 0.08, 0.1]],
+    wrong: [[220, 0, 0.11, "triangle"], [174, 0.1, 0.17, "triangle"]],
+    streak: [[659, 0, 0.08], [784, 0.08, 0.08], [988, 0.16, 0.15]],
+    finish: [[392, 0, 0.1], [523, 0.1, 0.1], [659, 0.2, 0.1], [784, 0.3, 0.22]],
+  };
+
+  patterns[sound]?.forEach(([frequency, delay, duration, type = "sine"]) => {
+    playTone(frequency, delay, duration, type);
+  });
+}
+
+function updateStreakDisplay() {
+  if (currentStreak < 2) {
+    streakBadge.hidden = true;
+    return;
+  }
+
+  streakCount.textContent = currentStreak;
+  streakBadge.hidden = false;
+  streakBadge.classList.remove("is-popping");
+  window.requestAnimationFrame(() => streakBadge.classList.add("is-popping"));
+}
+
+function celebrateStreak() {
+  const colors = ["#e6ad3c", "#cf662f", "#6ca64c", "#f5d680"];
+  streakCelebration.replaceChildren();
+  streakCelebration.hidden = false;
+
+  for (let index = 0; index < 16; index += 1) {
+    const leaf = document.createElement("span");
+    const angle = (Math.PI * 2 * index) / 16;
+    const distance = 120 + Math.random() * 180;
+
+    leaf.className = "streak-leaf";
+    leaf.style.setProperty("--leaf-x", `${Math.cos(angle) * distance}px`);
+    leaf.style.setProperty("--leaf-y", `${Math.sin(angle) * distance}px`);
+    leaf.style.setProperty("--leaf-rotation", `${180 + Math.random() * 520}deg`);
+    leaf.style.setProperty("--leaf-delay", `${Math.random() * 90}ms`);
+    leaf.style.setProperty("--leaf-color", colors[index % colors.length]);
+    streakCelebration.append(leaf);
+  }
+
+  window.setTimeout(() => {
+    streakCelebration.hidden = true;
+    streakCelebration.replaceChildren();
+  }, 1200);
+}
+
+function openCertificate() {
+  if (!lastResult) return;
+
+  certificateName.textContent = lastResult.name;
+  certificateHits.textContent = `${lastResult.correctAnswers}/${questions.length}`;
+  certificateScore.textContent = lastResult.score;
+  certificateTime.textContent = formatDuration(lastResult.durationMs);
+  certificateDate.textContent = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(lastResult.completedAt);
+
+  certificateModal.hidden = false;
+  document.body.classList.add("dialog-open");
+  appShell.inert = true;
+  appShell.setAttribute("aria-hidden", "true");
+  videoDock.inert = true;
+  videoDock.setAttribute("aria-hidden", "true");
+  certificateCloseButton.focus();
+}
+
+function closeCertificate() {
+  if (certificateModal.hidden) return;
+
+  certificateModal.hidden = true;
+  document.body.classList.remove("dialog-open");
+  appShell.inert = false;
+  appShell.removeAttribute("aria-hidden");
+  videoDock.inert = false;
+  videoDock.removeAttribute("aria-hidden");
+  certificateButton.focus();
+}
+
+function keepFocusInsideCertificate(event) {
+  if (event.key !== "Tab" || certificateModal.hidden) return;
+  event.preventDefault();
+  certificateCloseButton.focus();
+}
 
 function normalizePlayerName(value) {
   return value.trim().replace(/\s+/g, " ");
@@ -303,11 +568,65 @@ function createYouTubePlayer() {
   });
 }
 
-window.onYouTubeIframeAPIReady = createYouTubePlayer;
+function createMusicPlayer() {
+  if (!canEmbedYouTube || musicPlayer || !window.YT?.Player) return;
+
+  musicPlayer = new window.YT.Player("music-player", {
+    width: 200,
+    height: 200,
+    videoId: backgroundMusicVideoId,
+    playerVars: {
+      autoplay: 0,
+      controls: 0,
+      playsinline: 1,
+      rel: 0,
+      loop: 1,
+      playlist: backgroundMusicVideoId,
+      origin: window.location.origin,
+      widget_referrer: window.location.href,
+    },
+    events: {
+      onReady: () => {
+        musicPlayerReady = true;
+        document.querySelector("#music-player-frame").hidden = false;
+        musicFallback.hidden = true;
+        musicControls.hidden = false;
+        musicPlayer.setVolume(musicVolumeLevel);
+        updateMusicControls();
+
+        if (musicShouldPlay && videoModal.hidden) musicPlayer.playVideo();
+      },
+      onStateChange: (event) => {
+        musicIsPlaying = event.data === window.YT.PlayerState.PLAYING;
+        if (musicIsPlaying) musicShouldPlay = true;
+        if (event.data === window.YT.PlayerState.PAUSED && !musicPausedForVideo) {
+          musicShouldPlay = false;
+        }
+        updateMusicControls();
+      },
+      onAutoplayBlocked: () => {
+        musicShouldPlay = false;
+        musicIsPlaying = false;
+        updateMusicControls();
+      },
+      onError: () => {
+        showMusicFallback("O YouTube bloqueou a reprodução desta música incorporada.");
+      },
+    },
+  });
+}
+
+function createYouTubePlayers() {
+  createYouTubePlayer();
+  createMusicPlayer();
+}
+
+window.onYouTubeIframeAPIReady = createYouTubePlayers;
 
 function initializeYouTube() {
   if (!canEmbedYouTube) {
     showVideoFallback("A reprodução incorporada estará disponível quando o quiz for publicado em um site.");
+    showMusicFallback("A música estará disponível quando o quiz for publicado em um site.");
     return;
   }
 
@@ -316,6 +635,7 @@ function initializeYouTube() {
   script.async = true;
   script.onerror = () => {
     showVideoFallback("Não foi possível carregar o player do YouTube.");
+    showMusicFallback("Não foi possível carregar a música do YouTube.");
   };
   document.head.append(script);
 }
@@ -325,6 +645,9 @@ function openVideoModal({ advanceAfterClose = false } = {}) {
 
   timerWasRunningBeforeVideo = gameInProgress && timerStartedAt !== null;
   if (timerWasRunningBeforeVideo) pauseTimer();
+
+  musicPausedForVideo = musicShouldPlay;
+  pauseBackgroundMusic({ preserveIntent: true });
 
   pendingQuestionAdvance = advanceAfterClose;
   videoHasOpened = true;
@@ -356,6 +679,10 @@ function closeVideoModal() {
   document.body.classList.remove("video-modal-open");
   appShell.inert = false;
   appShell.removeAttribute("aria-hidden");
+
+  const shouldResumeMusic = musicPausedForVideo && musicShouldPlay;
+  musicPausedForVideo = false;
+  if (shouldResumeMusic && musicPlayerReady) musicPlayer.playVideo();
 
   if (shouldAdvance && currentQuestionIndex < questions.length - 1) {
     currentQuestionIndex += 1;
@@ -452,12 +779,26 @@ function checkAnswer() {
 
   if (isCorrect) {
     score += scorePerQuestion;
+    currentStreak += 1;
     scoreElement.textContent = String(score).padStart(3, "0");
-    feedbackElement.textContent = "Resposta certa! Você ganhou 100 pontos.";
+    feedbackElement.textContent = currentStreak >= 2
+      ? `Resposta certa! Você chegou a ${currentStreak} acertos seguidos.`
+      : "Resposta certa! Você ganhou 100 pontos.";
     feedbackElement.className = "feedback is-success";
+    updateStreakDisplay();
+
+    if (currentStreak >= 2) {
+      playSound("streak");
+      celebrateStreak();
+    } else {
+      playSound("correct");
+    }
   } else {
+    currentStreak = 0;
     feedbackElement.textContent = "Não foi dessa vez. A resposta correta está destacada.";
     feedbackElement.className = "feedback is-error";
+    updateStreakDisplay();
+    playSound("wrong");
   }
 
   buttonLabel.textContent = currentQuestionIndex === questions.length - 1
@@ -499,41 +840,71 @@ function showResults() {
   const durationMs = finishTimer();
   const savedResult = saveResult(durationMs);
 
+  lastResult = {
+    name: playerName,
+    correctAnswers,
+    score,
+    durationMs,
+    completedAt: new Date(),
+  };
+
   quizCard.hidden = true;
   resultCard.hidden = false;
   finalScore.textContent = score;
   finalTime.textContent = formatDuration(durationMs);
   resultMessage.textContent = `${playerName}, você acertou ${correctAnswers} de ${total} ${total === 1 ? "pergunta" : "perguntas"}. Continue explorando, aprendendo e transformando!`;
   renderRanking(savedResult.ranking, savedResult.currentCompletedAt);
+  playSound("finish");
   restartButton.focus();
 }
 
 function restartQuiz() {
+  closeCertificate();
   resetTimer();
   currentQuestionIndex = 0;
   selectedAnswerIndex = null;
   score = 0;
   answerWasChecked = false;
+  currentStreak = 0;
   playerName = "";
+  lastResult = null;
   videoHasOpened = false;
   pendingQuestionAdvance = false;
   scoreElement.textContent = "000";
+  gameStats.hidden = true;
+  streakBadge.hidden = true;
   videoDock.hidden = true;
   resultCard.hidden = true;
   quizCard.hidden = true;
-  introCard.hidden = false;
+  introCard.hidden = true;
+  attractCard.hidden = false;
   playerForm.reset();
   playerNameInput.removeAttribute("aria-invalid");
   nameFeedback.textContent = "";
+
+  musicPausedForVideo = false;
+  pauseBackgroundMusic();
+  musicPanel.hidden = true;
 
   if (youtubePlayerReady) {
     youtubePlayer.pauseVideo();
     youtubePlayer.seekTo(0, true);
   }
 
+  if (musicPlayerReady) musicPlayer.seekTo(0, true);
+
   renderQuestion();
-  playerNameInput.focus();
+  startExperienceButton.focus();
 }
+
+startExperienceButton.addEventListener("click", () => {
+  ensureAudioContext();
+  playSound("start");
+  playBackgroundMusic();
+  attractCard.hidden = true;
+  introCard.hidden = false;
+  playerNameInput.focus();
+});
 
 playerForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -552,6 +923,9 @@ playerForm.addEventListener("submit", (event) => {
   nameFeedback.textContent = "";
   introCard.hidden = true;
   quizCard.hidden = false;
+  gameStats.hidden = false;
+  ensureAudioContext();
+  playBackgroundMusic();
   startTimer();
   questionElement.focus();
 });
@@ -563,10 +937,44 @@ playerNameInput.addEventListener("input", () => {
 
 confirmButton.addEventListener("click", showNextStep);
 restartButton.addEventListener("click", restartQuiz);
+certificateButton.addEventListener("click", openCertificate);
+certificateCloseButton.addEventListener("click", closeCertificate);
+certificateModal.querySelector(".certificate-modal__backdrop").addEventListener("click", closeCertificate);
 videoCloseButton.addEventListener("click", closeVideoModal);
 videoDock.addEventListener("click", () => openVideoModal());
+musicToggle.addEventListener("click", () => {
+  if (musicShouldPlay) {
+    pauseBackgroundMusic();
+    return;
+  }
+
+  playBackgroundMusic();
+});
+musicVolume.addEventListener("input", () => {
+  musicVolumeLevel = Number(musicVolume.value);
+  saveMusicVolume();
+  if (musicPlayerReady) musicPlayer.setVolume(musicVolumeLevel);
+  updateMusicControls();
+});
+soundToggle.addEventListener("click", () => {
+  soundEnabled = !soundEnabled;
+  saveSoundPreference();
+  updateSoundToggle();
+  if (soundEnabled) {
+    ensureAudioContext();
+    playSound("correct");
+  }
+});
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !certificateModal.hidden) {
+    closeCertificate();
+    return;
+  }
+
+  keepFocusInsideCertificate(event);
+  if (!certificateModal.hidden) return;
+
   if (event.key === "Escape" && !videoModal.hidden) {
     closeVideoModal();
     return;
@@ -583,5 +991,7 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+updateSoundToggle();
+updateMusicControls();
 initializeYouTube();
 renderQuestion();

@@ -123,19 +123,48 @@
           </span>
         </a>
 
-        <div class="game-stats">
-          <div class="scoreboard" aria-label="Tempo de jogo">
-            <span class="scoreboard__label">Tempo</span>
-            <strong id="timer">00:00</strong>
-          </div>
-          <div class="scoreboard" aria-label="Placar">
-            <span class="scoreboard__label">Pontos</span>
-            <strong id="score">000</strong>
+        <div class="header-actions">
+          <button
+            class="sound-toggle"
+            id="sound-toggle"
+            type="button"
+            aria-pressed="true"
+            aria-label="Desativar efeitos sonoros"
+          >
+            <span id="sound-icon" aria-hidden="true">♪</span>
+          </button>
+
+          <div class="game-stats" id="game-stats" hidden>
+            <div class="scoreboard" aria-label="Tempo de jogo">
+              <span class="scoreboard__label">Tempo</span>
+              <strong id="timer">00:00</strong>
+            </div>
+            <div class="scoreboard" aria-label="Placar">
+              <span class="scoreboard__label">Pontos</span>
+              <strong id="score">000</strong>
+            </div>
           </div>
         </div>
       </header>
 
-      <section class="intro-card" id="intro-card" aria-labelledby="intro-title">
+      <section class="attract-card" id="attract-card" aria-labelledby="attract-title">
+        <div class="attract-card__fireflies" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <span class="attract-card__kicker">Feira Cultural Euclides</span>
+        <div class="attract-card__emblem" aria-hidden="true">
+          <span>?</span>
+        </div>
+        <h1 id="attract-title">Saberes da Floresta</h1>
+        <p>Descubra, aprenda e mostre o que você sabe sobre os povos indígenas do Brasil.</p>
+        <button class="attract-card__button" id="start-experience-button" type="button">
+          <span aria-hidden="true">▶</span>
+          Toque para jogar
+        </button>
+        <small>10 perguntas • ranking local • certificado</small>
+      </section>
+
+      <section class="intro-card" id="intro-card" aria-labelledby="intro-title" hidden>
         <span class="intro-card__kicker">Antes de começar</span>
         <div class="intro-card__symbol" aria-hidden="true">◆</div>
         <h1 id="intro-title">Qual é o seu nome?</h1>
@@ -168,7 +197,13 @@
 
         <div class="round-info">
           <span class="eyebrow">Povos indígenas do Brasil</span>
-          <span class="question-count" id="question-count">Pergunta 1 de 1</span>
+          <div class="round-info__status">
+            <span class="streak-badge" id="streak-badge" hidden>
+              <strong id="streak-count">2</strong>
+              acertos seguidos!
+            </span>
+            <span class="question-count" id="question-count">Pergunta 1 de 1</span>
+          </div>
         </div>
 
         <div class="progress" aria-label="Progresso do quiz">
@@ -213,9 +248,14 @@
           <ol class="ranking__list" id="ranking-list"></ol>
         </section>
 
-        <button class="confirm-button" id="restart-button" type="button">
-          Nova partida <span aria-hidden="true">↻</span>
-        </button>
+        <div class="result-actions">
+          <button class="secondary-button" id="certificate-button" type="button">
+            Ver certificado <span aria-hidden="true">◆</span>
+          </button>
+          <button class="confirm-button" id="restart-button" type="button">
+            Nova partida <span aria-hidden="true">↻</span>
+          </button>
+        </div>
       </section>
 
       <footer class="footer-note">
@@ -224,6 +264,56 @@
         <span aria-hidden="true">◆</span>
       </footer>
     </main>
+
+    <aside class="music-panel" id="music-panel" aria-label="Música ambiente" hidden>
+      <div class="music-panel__heading">
+        <div>
+          <span>Música ambiente</span>
+          <strong>El Condor Pasa</strong>
+        </div>
+        <span class="music-panel__equalizer" id="music-equalizer" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+      </div>
+
+      <div class="music-panel__player" id="music-player-frame">
+        <div id="music-player"></div>
+      </div>
+
+      <div class="music-panel__fallback" id="music-fallback" hidden>
+        <p>A música estará disponível quando o quiz estiver publicado.</p>
+        <a
+          href="https://www.youtube.com/watch?v=8kQZHYbZkLs"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Abrir no YouTube
+        </a>
+      </div>
+
+      <div class="music-panel__controls" id="music-controls">
+        <button
+          class="music-panel__toggle"
+          id="music-toggle"
+          type="button"
+          aria-label="Pausar música"
+          aria-pressed="true"
+        >
+          <span id="music-toggle-icon" aria-hidden="true">Ⅱ</span>
+        </button>
+        <label for="music-volume">Volume</label>
+        <input
+          id="music-volume"
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value="30"
+        />
+        <output id="music-volume-value" for="music-volume">30%</output>
+      </div>
+      <small>Leo Rojas • YouTube</small>
+    </aside>
 
     <button class="video-dock" id="video-dock" type="button" hidden>
       <span class="video-dock__play" aria-hidden="true">▶</span>
@@ -281,6 +371,50 @@
         </div>
       </section>
     </div>
+
+    <div
+      class="certificate-modal"
+      id="certificate-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="certificate-title"
+      hidden
+    >
+      <div class="certificate-modal__backdrop"></div>
+      <section class="certificate-modal__panel">
+        <button
+          class="certificate-modal__close"
+          id="certificate-close"
+          type="button"
+          aria-label="Fechar certificado"
+        >
+          ×
+        </button>
+
+        <div class="certificate" id="certificate">
+          <div class="certificate__pattern" aria-hidden="true"></div>
+          <span class="certificate__school">Colégio Euclides da Cunha</span>
+          <span class="certificate__kicker">Certificado de participação</span>
+          <h2 id="certificate-title">Saberes da Floresta</h2>
+          <p>Este certificado reconhece que</p>
+          <strong class="certificate__name" id="certificate-name"></strong>
+          <p>concluiu o desafio sobre os povos indígenas do Brasil durante a Feira Cultural.</p>
+          <div class="certificate__stats">
+            <span><strong id="certificate-hits">0/10</strong> acertos</span>
+            <span><strong id="certificate-score">0</strong> pontos</span>
+            <span><strong id="certificate-time">00:00</strong> de jogo</span>
+          </div>
+          <div class="certificate__footer">
+            <span id="certificate-date"></span>
+            <span aria-hidden="true">◆ Conhecer • respeitar • preservar ◆</span>
+          </div>
+        </div>
+
+        <p class="certificate-modal__hint">Mostre seu certificado e tire uma foto!</p>
+      </section>
+    </div>
+
+    <div class="streak-celebration" id="streak-celebration" aria-hidden="true" hidden></div>
 
     <script src="script.js"></script>
   </body>
