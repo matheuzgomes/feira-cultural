@@ -3,20 +3,16 @@ const questions = [
   {
     question: "Todos os povos indígenas do Brasil são iguais?",
     answers: [
-      "Sim, todos possuem os mesmos costumes",
-      "Não, existem diferentes povos e culturas",
-      "Sim, todos falam a mesma língua",
-      "Não existem povos indígenas no Brasil",
+      "Sim",
+      "Não",
     ],
     correctAnswer: 1,
   },
   {
     question: "Os povos indígenas possuem culturas entre si?",
-    answers: [
-      "Sim, cada povo pode ter sua própria cultura",
-      "Não, todos seguem os mesmos costumes",
-      "Somente os povos que vivem em cidades",
-      "Somente os povos da região Norte",
+      answers: [
+      "Sim",
+      "Não",
     ],
     correctAnswer: 0,
   },
