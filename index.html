@@ -123,13 +123,47 @@
           </span>
         </a>
 
-        <div class="scoreboard" aria-label="Placar">
-          <span class="scoreboard__label">Pontos</span>
-          <strong id="score">000</strong>
+        <div class="game-stats">
+          <div class="scoreboard" aria-label="Tempo de jogo">
+            <span class="scoreboard__label">Tempo</span>
+            <strong id="timer">00:00</strong>
+          </div>
+          <div class="scoreboard" aria-label="Placar">
+            <span class="scoreboard__label">Pontos</span>
+            <strong id="score">000</strong>
+          </div>
         </div>
       </header>
 
-      <section class="quiz-card" id="quiz-card" aria-live="polite">
+      <section class="intro-card" id="intro-card" aria-labelledby="intro-title">
+        <span class="intro-card__kicker">Antes de começar</span>
+        <div class="intro-card__symbol" aria-hidden="true">◆</div>
+        <h1 id="intro-title">Qual é o seu nome?</h1>
+        <p>Identifique-se para registrar sua pontuação no ranking local.</p>
+
+        <form class="player-form" id="player-form" novalidate>
+          <label for="player-name">Nome ou apelido</label>
+          <div class="player-form__controls">
+            <input
+              id="player-name"
+              name="playerName"
+              type="text"
+              minlength="2"
+              maxlength="24"
+              autocomplete="name"
+              placeholder="Digite seu nome"
+              aria-describedby="name-feedback"
+              required
+            />
+            <button class="confirm-button" type="submit">
+              Começar desafio <span aria-hidden="true">→</span>
+            </button>
+          </div>
+          <p class="player-form__feedback" id="name-feedback" role="alert"></p>
+        </form>
+      </section>
+
+      <section class="quiz-card" id="quiz-card" aria-live="polite" hidden>
         <div class="quiz-card__shine" aria-hidden="true"></div>
 
         <div class="round-info">
@@ -168,8 +202,19 @@
           <strong id="final-score">0</strong>
           <span>pontos</span>
         </div>
+        <p class="result-time">Tempo de jogo: <strong id="final-time">00:00</strong></p>
+
+        <section class="ranking" aria-labelledby="ranking-title">
+          <div class="ranking__heading">
+            <span aria-hidden="true">◆</span>
+            <h2 id="ranking-title">Top 5 da floresta</h2>
+            <span aria-hidden="true">◆</span>
+          </div>
+          <ol class="ranking__list" id="ranking-list"></ol>
+        </section>
+
         <button class="confirm-button" id="restart-button" type="button">
-          Jogar novamente <span aria-hidden="true">↻</span>
+          Nova partida <span aria-hidden="true">↻</span>
         </button>
       </section>
 

@@ -59,7 +59,13 @@ const questions = [
 
 const scorePerQuestion = 100;
 const answerLetters = ["A", "B", "C", "D"];
+const rankingStorageKey = "saberesDaFloresta.ranking.v1";
+const rankingLimit = 5;
 
+const introCard = document.querySelector("#intro-card");
+const playerForm = document.querySelector("#player-form");
+const playerNameInput = document.querySelector("#player-name");
+const nameFeedback = document.querySelector("#name-feedback");
 const quizCard = document.querySelector("#quiz-card");
 const resultCard = document.querySelector("#result-card");
 const questionElement = document.querySelector("#question");
@@ -67,11 +73,14 @@ const answersElement = document.querySelector("#answers");
 const questionCountElement = document.querySelector("#question-count");
 const progressBar = document.querySelector("#progress-bar");
 const scoreElement = document.querySelector("#score");
+const timerElement = document.querySelector("#timer");
 const feedbackElement = document.querySelector("#feedback");
 const confirmButton = document.querySelector("#confirm-button");
 const buttonLabel = document.querySelector("#button-label");
 const resultMessage = document.querySelector("#result-message");
 const finalScore = document.querySelector("#final-score");
+const finalTime = document.querySelector("#final-time");
+const rankingList = document.querySelector("#ranking-list");
 const restartButton = document.querySelector("#restart-button");
 const appShell = document.querySelector(".app-shell");
 const videoModal = document.querySelector("#video-modal");
@@ -88,10 +97,174 @@ let currentQuestionIndex = 0;
 let selectedAnswerIndex = null;
 let score = 0;
 let answerWasChecked = false;
+let playerName = "";
+let gameInProgress = false;
+let elapsedTimeMs = 0;
+let timerStartedAt = null;
+let timerIntervalId = null;
+let timerWasRunningBeforeVideo = false;
 let youtubePlayer = null;
 let youtubePlayerReady = false;
 let videoHasOpened = false;
 let pendingQuestionAdvance = false;
+
+function normalizePlayerName(value) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function getPlayerKey(name) {
+  return normalizePlayerName(name).toLocaleLowerCase("pt-BR");
+}
+
+function formatDuration(durationMs) {
+  const totalSeconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function getElapsedTime() {
+  if (timerStartedAt === null) return elapsedTimeMs;
+  return elapsedTimeMs + performance.now() - timerStartedAt;
+}
+
+function updateTimerDisplay() {
+  timerElement.textContent = formatDuration(getElapsedTime());
+}
+
+function startTimer() {
+  elapsedTimeMs = 0;
+  timerStartedAt = performance.now();
+  gameInProgress = true;
+  updateTimerDisplay();
+  timerIntervalId = window.setInterval(updateTimerDisplay, 250);
+}
+
+function pauseTimer() {
+  if (timerStartedAt !== null) {
+    elapsedTimeMs += performance.now() - timerStartedAt;
+    timerStartedAt = null;
+  }
+
+  window.clearInterval(timerIntervalId);
+  timerIntervalId = null;
+  updateTimerDisplay();
+}
+
+function resumeTimer() {
+  if (!gameInProgress || timerStartedAt !== null) return;
+
+  timerStartedAt = performance.now();
+  timerIntervalId = window.setInterval(updateTimerDisplay, 250);
+}
+
+function finishTimer() {
+  pauseTimer();
+  gameInProgress = false;
+  return Math.round(elapsedTimeMs);
+}
+
+function resetTimer() {
+  gameInProgress = false;
+  elapsedTimeMs = 0;
+  timerStartedAt = null;
+  timerWasRunningBeforeVideo = false;
+  window.clearInterval(timerIntervalId);
+  timerIntervalId = null;
+  updateTimerDisplay();
+}
+
+function sortRanking(entries) {
+  return [...entries].sort((first, second) => {
+    if (first.score !== second.score) return second.score - first.score;
+    if (first.durationMs !== second.durationMs) return first.durationMs - second.durationMs;
+    return new Date(second.completedAt).getTime() - new Date(first.completedAt).getTime();
+  });
+}
+
+function isValidRankingEntry(entry) {
+  return entry
+    && typeof entry.name === "string"
+    && entry.name.length >= 2
+    && entry.name.length <= 24
+    && Number.isFinite(entry.score)
+    && Number.isFinite(entry.durationMs)
+    && entry.durationMs >= 0
+    && typeof entry.completedAt === "string"
+    && !Number.isNaN(Date.parse(entry.completedAt));
+}
+
+function loadRanking() {
+  try {
+    const storedRanking = JSON.parse(localStorage.getItem(rankingStorageKey) ?? "[]");
+    if (!Array.isArray(storedRanking)) return [];
+    return sortRanking(storedRanking.filter(isValidRankingEntry)).slice(0, rankingLimit);
+  } catch {
+    return [];
+  }
+}
+
+function isResultBetter(candidate, previous) {
+  return candidate.score > previous.score
+    || (candidate.score === previous.score && candidate.durationMs < previous.durationMs);
+}
+
+function saveResult(durationMs) {
+  const ranking = loadRanking();
+  const completedAt = new Date().toISOString();
+  const result = { name: playerName, score, durationMs, completedAt };
+  const existingIndex = ranking.findIndex((entry) => getPlayerKey(entry.name) === getPlayerKey(playerName));
+  let resultWasAccepted = false;
+
+  if (existingIndex === -1) {
+    ranking.push(result);
+    resultWasAccepted = true;
+  } else if (isResultBetter(result, ranking[existingIndex])) {
+    ranking[existingIndex] = result;
+    resultWasAccepted = true;
+  }
+
+  const updatedRanking = sortRanking(ranking).slice(0, rankingLimit);
+  const currentResultIsRanked = resultWasAccepted
+    && updatedRanking.some((entry) => entry.completedAt === completedAt);
+
+  try {
+    localStorage.setItem(rankingStorageKey, JSON.stringify(updatedRanking));
+  } catch {
+    // The ranking still works for the current screen when storage is unavailable.
+  }
+
+  return {
+    ranking: updatedRanking,
+    currentCompletedAt: currentResultIsRanked ? completedAt : null,
+  };
+}
+
+function renderRanking(ranking, currentCompletedAt) {
+  rankingList.replaceChildren();
+
+  ranking.forEach((entry, index) => {
+    const item = document.createElement("li");
+    const position = document.createElement("span");
+    const name = document.createElement("span");
+    const points = document.createElement("span");
+    const time = document.createElement("span");
+
+    item.className = "ranking__item";
+    item.classList.toggle("is-current", entry.completedAt === currentCompletedAt);
+    position.className = "ranking__position";
+    name.className = "ranking__name";
+    points.className = "ranking__points";
+    time.className = "ranking__time";
+    position.textContent = `${index + 1}º`;
+    name.textContent = entry.name;
+    points.textContent = `${entry.score} pts`;
+    time.textContent = formatDuration(entry.durationMs);
+
+    item.append(position, name, points, time);
+    rankingList.append(item);
+  });
+}
 
 function showVideoFallback(message) {
   youtubePlayerReady = false;
@@ -150,6 +323,9 @@ function initializeYouTube() {
 function openVideoModal({ advanceAfterClose = false } = {}) {
   const isReopening = videoHasOpened;
 
+  timerWasRunningBeforeVideo = gameInProgress && timerStartedAt !== null;
+  if (timerWasRunningBeforeVideo) pauseTimer();
+
   pendingQuestionAdvance = advanceAfterClose;
   videoHasOpened = true;
   videoDock.hidden = true;
@@ -172,7 +348,9 @@ function closeVideoModal() {
   }
 
   const shouldAdvance = pendingQuestionAdvance;
+  const shouldResumeTimer = timerWasRunningBeforeVideo;
   pendingQuestionAdvance = false;
+  timerWasRunningBeforeVideo = false;
   videoModal.hidden = true;
   videoDock.hidden = false;
   document.body.classList.remove("video-modal-open");
@@ -182,10 +360,12 @@ function closeVideoModal() {
   if (shouldAdvance && currentQuestionIndex < questions.length - 1) {
     currentQuestionIndex += 1;
     renderQuestion();
+    if (shouldResumeTimer) resumeTimer();
     requestAnimationFrame(() => questionElement.focus());
     return;
   }
 
+  if (shouldResumeTimer) resumeTimer();
   videoDock.focus();
 }
 
@@ -316,25 +496,35 @@ function showNextStep() {
 function showResults() {
   const correctAnswers = score / scorePerQuestion;
   const total = questions.length;
+  const durationMs = finishTimer();
+  const savedResult = saveResult(durationMs);
 
   quizCard.hidden = true;
   resultCard.hidden = false;
   finalScore.textContent = score;
-  resultMessage.textContent = `Você acertou ${correctAnswers} de ${total} ${total === 1 ? "pergunta" : "perguntas"}. Continue explorando, aprendendo e transformando!`;
+  finalTime.textContent = formatDuration(durationMs);
+  resultMessage.textContent = `${playerName}, você acertou ${correctAnswers} de ${total} ${total === 1 ? "pergunta" : "perguntas"}. Continue explorando, aprendendo e transformando!`;
+  renderRanking(savedResult.ranking, savedResult.currentCompletedAt);
   restartButton.focus();
 }
 
 function restartQuiz() {
+  resetTimer();
   currentQuestionIndex = 0;
   selectedAnswerIndex = null;
   score = 0;
   answerWasChecked = false;
+  playerName = "";
   videoHasOpened = false;
   pendingQuestionAdvance = false;
   scoreElement.textContent = "000";
   videoDock.hidden = true;
   resultCard.hidden = true;
-  quizCard.hidden = false;
+  quizCard.hidden = true;
+  introCard.hidden = false;
+  playerForm.reset();
+  playerNameInput.removeAttribute("aria-invalid");
+  nameFeedback.textContent = "";
 
   if (youtubePlayerReady) {
     youtubePlayer.pauseVideo();
@@ -342,7 +532,34 @@ function restartQuiz() {
   }
 
   renderQuestion();
+  playerNameInput.focus();
 }
+
+playerForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const normalizedName = normalizePlayerName(playerNameInput.value);
+  if (normalizedName.length < 2 || normalizedName.length > 24) {
+    playerNameInput.setAttribute("aria-invalid", "true");
+    nameFeedback.textContent = "Digite um nome ou apelido entre 2 e 24 caracteres.";
+    playerNameInput.focus();
+    return;
+  }
+
+  playerName = normalizedName;
+  playerNameInput.value = normalizedName;
+  playerNameInput.removeAttribute("aria-invalid");
+  nameFeedback.textContent = "";
+  introCard.hidden = true;
+  quizCard.hidden = false;
+  startTimer();
+  questionElement.focus();
+});
+
+playerNameInput.addEventListener("input", () => {
+  playerNameInput.removeAttribute("aria-invalid");
+  nameFeedback.textContent = "";
+});
 
 confirmButton.addEventListener("click", showNextStep);
 restartButton.addEventListener("click", restartQuiz);
