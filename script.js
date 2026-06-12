@@ -153,7 +153,6 @@ let musicIsPlaying = false;
 let musicPausedForVideo = false;
 let musicVolumeLevel = loadMusicVolume();
 let videoHasOpened = false;
-let pendingQuestionAdvance = false;
 let isPlayingSenna = false;
 let audioContext = null;
 let soundEnabled = loadSoundPreference();
@@ -754,7 +753,7 @@ function initializeYouTube() {
   document.head.append(script);
 }
 
-function openVideoModal({ advanceAfterClose = false } = {}) {
+function openVideoModal() {
   const isReopening = videoHasOpened;
 
   timerWasRunningBeforeVideo = gameInProgress && timerStartedAt !== null;
@@ -763,7 +762,6 @@ function openVideoModal({ advanceAfterClose = false } = {}) {
   musicPausedForVideo = musicShouldPlay;
   pauseBackgroundMusic({ preserveIntent: true });
 
-  pendingQuestionAdvance = advanceAfterClose;
   videoHasOpened = true;
   videoDock.hidden = true;
   videoModal.hidden = false;
@@ -784,9 +782,7 @@ function closeVideoModal() {
     youtubePlayer.pauseVideo();
   }
 
-  const shouldAdvance = pendingQuestionAdvance;
   const shouldResumeTimer = timerWasRunningBeforeVideo;
-  pendingQuestionAdvance = false;
   timerWasRunningBeforeVideo = false;
   videoModal.hidden = true;
   videoDock.hidden = false;
@@ -797,14 +793,6 @@ function closeVideoModal() {
   const shouldResumeMusic = musicPausedForVideo && musicShouldPlay;
   musicPausedForVideo = false;
   if (shouldResumeMusic && musicPlayerReady) musicPlayer.playVideo();
-
-  if (shouldAdvance && currentQuestionIndex < questions.length - 1) {
-    currentQuestionIndex += 1;
-    renderQuestion();
-    if (shouldResumeTimer) resumeTimer();
-    requestAnimationFrame(() => questionElement.focus());
-    return;
-  }
 
   if (shouldResumeTimer) resumeTimer();
   videoDock.focus();
@@ -922,23 +910,11 @@ function checkAnswer() {
     ? "Ver resultado"
     : "Próxima pergunta";
 
-  if (currentQuestionIndex === 1 && !videoHasOpened) {
-    window.setTimeout(() => {
-      if (currentQuestionIndex === 1 && answerWasChecked && !videoHasOpened) {
-        openVideoModal({ advanceAfterClose: true });
-      }
-    }, 650);
-  }
 }
 
 function showNextStep() {
   if (!answerWasChecked) {
     checkAnswer();
-    return;
-  }
-
-  if (currentQuestionIndex === 1 && !videoHasOpened) {
-    openVideoModal({ advanceAfterClose: true });
     return;
   }
 
@@ -1007,7 +983,6 @@ function restartQuiz() {
   playerName = "";
   lastResult = null;
   videoHasOpened = false;
-  pendingQuestionAdvance = false;
   isPlayingSenna = false;
   document.querySelector(".app-shell")?.classList.remove("screen-shake");
   document.querySelector("#particle-canvas").hidden = true;
@@ -1018,7 +993,6 @@ function restartQuiz() {
   scoreElement.textContent = "000";
   gameStats.hidden = true;
   streakBadge.hidden = true;
-  videoDock.hidden = true;
   resultCard.hidden = true;
   quizCard.hidden = true;
   introCard.hidden = true;
@@ -1032,11 +1006,9 @@ function restartQuiz() {
   musicPanel.hidden = true;
 
   videoModal.hidden = true;
-  document.querySelector("#video-loading").classList.remove("is-ready");
-  document.querySelector("#video-loading").classList.remove("is-error");
 
   if (youtubePlayerReady) {
-    youtubePlayer.pauseVideo();
+    youtubePlayer.cueVideoById(youtubeVideoId);
   }
 
   if (musicPlayerReady) {
