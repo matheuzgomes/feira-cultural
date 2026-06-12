@@ -1037,7 +1037,6 @@ function restartQuiz() {
 
   if (youtubePlayerReady) {
     youtubePlayer.pauseVideo();
-    youtubePlayer.seekTo(0, true);
   }
 
   if (musicPlayerReady) {
