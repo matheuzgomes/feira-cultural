@@ -981,6 +981,7 @@ function showResults() {
       isPlayingSenna = true;
       musicPlayer.loadVideoById(sennaVideoId);
       musicPlayer.setVolume(40);
+      musicPlayer.playVideo();
       musicShouldPlay = true;
       musicIsPlaying = true;
       updateMusicControls();
@@ -1030,13 +1031,16 @@ function restartQuiz() {
   pauseBackgroundMusic();
   musicPanel.hidden = true;
 
+  videoModal.hidden = true;
+  document.querySelector("#video-loading").classList.remove("is-ready");
+  document.querySelector("#video-loading").classList.remove("is-error");
+
   if (youtubePlayerReady) {
-    youtubePlayer.pauseVideo();
-    youtubePlayer.seekTo(0, true);
+    youtubePlayer.stopVideo();
   }
 
   if (musicPlayerReady) {
-    musicPlayer.loadVideoById(backgroundMusicVideoId);
+    musicPlayer.cueVideoById(backgroundMusicVideoId);
     musicPlayer.seekTo(0, true);
   }
 
