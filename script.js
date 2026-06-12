@@ -129,7 +129,8 @@ const certificateTime = document.querySelector("#certificate-time");
 const certificateDate = document.querySelector("#certificate-date");
 
 const youtubeVideoId = "MlJ6IjZYWyI";
-const backgroundMusicVideoId = "8kQZHYbZkLs";
+const backgroundMusicVideoId = "2KWrudRbgO8";
+const sennaVideoId = "-0hmmX96QvY";
 const canEmbedYouTube = ["http:", "https:"].includes(window.location.protocol);
 
 let currentQuestionIndex = 0;
@@ -153,6 +154,7 @@ let musicPausedForVideo = false;
 let musicVolumeLevel = loadMusicVolume();
 let videoHasOpened = false;
 let pendingQuestionAdvance = false;
+let isPlayingSenna = false;
 let audioContext = null;
 let soundEnabled = loadSoundPreference();
 let lastResult = null;
@@ -182,9 +184,9 @@ function loadMusicVolume() {
       && storedVolume >= 0
       && storedVolume <= 100
       ? storedVolume
-      : 30;
+      : 15;
   } catch {
-    return 30;
+    return 15;
   }
 }
 
@@ -286,6 +288,7 @@ function playSound(sound) {
     wrong: [[220, 0, 0.11, "triangle"], [174, 0.1, 0.17, "triangle"]],
     streak: [[659, 0, 0.08], [784, 0.08, 0.08], [988, 0.16, 0.15]],
     epic: [[262, 0, 0.15, "triangle"], [330, 0.08, 0.15, "triangle"], [392, 0.16, 0.15, "triangle"], [523, 0.24, 0.3, "sine", 0.08], [659, 0.24, 0.3, "sine", 0.06]],
+    victory: [[523, 0, 0.12, "triangle"], [659, 0.1, 0.12, "triangle"], [784, 0.2, 0.12, "triangle"], [1047, 0.3, 0.45, "sine", 0.1]],
     finish: [[392, 0, 0.1], [523, 0.1, 0.1], [659, 0.2, 0.1], [784, 0.3, 0.22]],
   };
 
@@ -341,7 +344,7 @@ function celebrateStreak() {
   }, 1200);
 }
 
-function celebrateMegaStreak() {
+function celebrateMegaStreak({ particleCount = 100, duration = 1300 } = {}) {
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (prefersReducedMotion) return;
 
@@ -368,7 +371,7 @@ function celebrateMegaStreak() {
   const cy = window.innerHeight / 2;
   const particles = [];
 
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < particleCount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = 150 + Math.random() * 500;
     particles.push({
@@ -433,7 +436,7 @@ function celebrateMegaStreak() {
       cancelAnimationFrame(animationId);
       canvas.hidden = true;
     }
-  }, 1300);
+  }, duration);
 }
 
 function openCertificate() {
@@ -705,6 +708,14 @@ function createMusicPlayer() {
         if (event.data === window.YT.PlayerState.PAUSED && !musicPausedForVideo) {
           musicShouldPlay = false;
         }
+        if (event.data === window.YT.PlayerState.ENDED && isPlayingSenna) {
+          isPlayingSenna = false;
+          musicPlayer.loadVideoById(backgroundMusicVideoId);
+          musicPlayer.setVolume(musicVolumeLevel);
+          musicShouldPlay = true;
+          musicIsPlaying = true;
+          updateMusicControls();
+        }
         updateMusicControls();
       },
       onAutoplayBlocked: () => {
@@ -945,6 +956,7 @@ function showResults() {
   const total = questions.length;
   const durationMs = finishTimer();
   const savedResult = saveResult(durationMs);
+  const isVictory = score === 1000 && durationMs < 30000;
 
   lastResult = {
     name: playerName,
@@ -958,7 +970,26 @@ function showResults() {
   resultCard.hidden = false;
   finalScore.textContent = score;
   finalTime.textContent = formatDuration(durationMs);
-  resultMessage.textContent = `${playerName}, você acertou ${correctAnswers} de ${total} ${total === 1 ? "pergunta" : "perguntas"}. Continue explorando, aprendendo e transformando!`;
+
+  if (isVictory) {
+    resultCard.classList.add("is-victory");
+    resultMessage.textContent = `${playerName}, VOCÊ É LENDÁRIO! Acertou todas as perguntas em menos de 30 segundos!`;
+    playSound("victory");
+    celebrateMegaStreak({ particleCount: 200, duration: 2800 });
+
+    if (musicPlayerReady) {
+      isPlayingSenna = true;
+      musicPlayer.loadVideoById(sennaVideoId);
+      musicPlayer.setVolume(40);
+      musicShouldPlay = true;
+      musicIsPlaying = true;
+      updateMusicControls();
+    }
+  } else {
+    resultCard.classList.remove("is-victory");
+    resultMessage.textContent = `${playerName}, você acertou ${correctAnswers} de ${total} ${total === 1 ? "pergunta" : "perguntas"}. Continue explorando, aprendendo e transformando!`;
+  }
+
   renderRanking(savedResult.ranking, savedResult.currentCompletedAt);
   playSound("finish");
   restartButton.focus();
@@ -976,11 +1007,13 @@ function restartQuiz() {
   lastResult = null;
   videoHasOpened = false;
   pendingQuestionAdvance = false;
+  isPlayingSenna = false;
   document.querySelector(".app-shell")?.classList.remove("screen-shake");
   document.querySelector("#particle-canvas").hidden = true;
   document.querySelector("#flash-overlay").hidden = true;
   streakBadge.classList.remove("is-legendary");
   streakLabel.textContent = "acertos seguidos!";
+  resultCard.classList.remove("is-victory");
   scoreElement.textContent = "000";
   gameStats.hidden = true;
   streakBadge.hidden = true;
@@ -1002,7 +1035,10 @@ function restartQuiz() {
     youtubePlayer.seekTo(0, true);
   }
 
-  if (musicPlayerReady) musicPlayer.seekTo(0, true);
+  if (musicPlayerReady) {
+    musicPlayer.loadVideoById(backgroundMusicVideoId);
+    musicPlayer.seekTo(0, true);
+  }
 
   renderQuestion();
   startExperienceButton.focus();
