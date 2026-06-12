@@ -94,6 +94,7 @@ const soundToggle = document.querySelector("#sound-toggle");
 const soundIcon = document.querySelector("#sound-icon");
 const streakBadge = document.querySelector("#streak-badge");
 const streakCount = document.querySelector("#streak-count");
+const streakLabel = document.querySelector("#streak-label");
 const streakCelebration = document.querySelector("#streak-celebration");
 const feedbackElement = document.querySelector("#feedback");
 const confirmButton = document.querySelector("#confirm-button");
@@ -284,11 +285,12 @@ function playSound(sound) {
     correct: [[523, 0, 0.08], [659, 0.08, 0.1]],
     wrong: [[220, 0, 0.11, "triangle"], [174, 0.1, 0.17, "triangle"]],
     streak: [[659, 0, 0.08], [784, 0.08, 0.08], [988, 0.16, 0.15]],
+    epic: [[262, 0, 0.15, "triangle"], [330, 0.08, 0.15, "triangle"], [392, 0.16, 0.15, "triangle"], [523, 0.24, 0.3, "sine", 0.08], [659, 0.24, 0.3, "sine", 0.06]],
     finish: [[392, 0, 0.1], [523, 0.1, 0.1], [659, 0.2, 0.1], [784, 0.3, 0.22]],
   };
 
-  patterns[sound]?.forEach(([frequency, delay, duration, type = "sine"]) => {
-    playTone(frequency, delay, duration, type);
+  patterns[sound]?.forEach(([frequency, delay, duration, type = "sine", volume = 0.05]) => {
+    playTone(frequency, delay, duration, type, volume);
   });
 }
 
@@ -298,9 +300,19 @@ function updateStreakDisplay() {
     return;
   }
 
-  streakCount.textContent = currentStreak;
   streakBadge.hidden = false;
   streakBadge.classList.remove("is-popping");
+
+  if (currentStreak >= 5) {
+    streakBadge.classList.add("is-legendary");
+    streakCount.textContent = `🔥 ${currentStreak}`;
+    streakLabel.textContent = "RAÍZ 🔥";
+  } else {
+    streakBadge.classList.remove("is-legendary");
+    streakCount.textContent = currentStreak;
+    streakLabel.textContent = "acertos seguidos!";
+  }
+
   window.requestAnimationFrame(() => streakBadge.classList.add("is-popping"));
 }
 
@@ -327,6 +339,101 @@ function celebrateStreak() {
     streakCelebration.hidden = true;
     streakCelebration.replaceChildren();
   }, 1200);
+}
+
+function celebrateMegaStreak() {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion) return;
+
+  const flash = document.querySelector("#flash-overlay");
+  flash.hidden = false;
+  flash.style.animation = "none";
+  flash.offsetHeight;
+  flash.style.animation = "";
+
+  document.querySelector(".app-shell").classList.add("screen-shake");
+
+  const canvas = document.querySelector("#particle-canvas");
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width = `${window.innerWidth}px`;
+  canvas.style.height = `${window.innerHeight}px`;
+  ctx.scale(dpr, dpr);
+  canvas.hidden = false;
+
+  const colors = ["#e6ad3c", "#cf662f", "#6ca64c", "#f5d680", "#ff6b35", "#37c979", "#ffe08c", "#ff4444", "#ffb347"];
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  const particles = [];
+
+  for (let i = 0; i < 100; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 150 + Math.random() * 500;
+    particles.push({
+      x: cx + (Math.random() - 0.5) * 80,
+      y: cy + (Math.random() - 0.5) * 80,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 250,
+      size: 4 + Math.random() * 14,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      life: 1,
+      decay: 0.006 + Math.random() * 0.01,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 12,
+    });
+  }
+
+  let animationId;
+
+  function animate() {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    let alive = false;
+
+    for (const p of particles) {
+      if (p.life <= 0) continue;
+      alive = true;
+
+      p.x += p.vx * 0.016;
+      p.y += p.vy * 0.016;
+      p.vy += 600 * 0.016;
+      p.vx *= 0.99;
+      p.life -= p.decay;
+      p.rotation += p.rotationSpeed * 0.016;
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = p.size > 8 ? 10 : 4;
+
+      const s = p.size;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.35, s * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    if (alive) {
+      animationId = requestAnimationFrame(animate);
+    } else {
+      canvas.hidden = true;
+    }
+  }
+
+  animate();
+
+  window.setTimeout(() => {
+    document.querySelector(".app-shell").classList.remove("screen-shake");
+    flash.hidden = true;
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      canvas.hidden = true;
+    }
+  }, 1300);
 }
 
 function openCertificate() {
@@ -783,7 +890,10 @@ function checkAnswer() {
     feedbackElement.className = "feedback is-success";
     updateStreakDisplay();
 
-    if (currentStreak >= 2) {
+    if (currentStreak === 5) {
+      playSound("epic");
+      celebrateMegaStreak();
+    } else if (currentStreak >= 2) {
       playSound("streak");
       celebrateStreak();
     } else {
@@ -866,6 +976,11 @@ function restartQuiz() {
   lastResult = null;
   videoHasOpened = false;
   pendingQuestionAdvance = false;
+  document.querySelector(".app-shell")?.classList.remove("screen-shake");
+  document.querySelector("#particle-canvas").hidden = true;
+  document.querySelector("#flash-overlay").hidden = true;
+  streakBadge.classList.remove("is-legendary");
+  streakLabel.textContent = "acertos seguidos!";
   scoreElement.textContent = "000";
   gameStats.hidden = true;
   streakBadge.hidden = true;

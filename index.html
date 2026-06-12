@@ -200,7 +200,7 @@
           <div class="round-info__status">
             <span class="streak-badge" id="streak-badge" hidden>
               <strong id="streak-count">2</strong>
-              acertos seguidos!
+              <span id="streak-label">acertos seguidos!</span>
             </span>
             <span class="question-count" id="question-count">Pergunta 1 de 1</span>
           </div>
@@ -415,6 +415,10 @@
     </div>
 
     <div class="streak-celebration" id="streak-celebration" aria-hidden="true" hidden></div>
+
+    <div class="flash-overlay" id="flash-overlay" aria-hidden="true" hidden></div>
+
+    <canvas class="particle-canvas" id="particle-canvas" aria-hidden="true" hidden></canvas>
 
     <script src="script.js"></script>
   </body>
