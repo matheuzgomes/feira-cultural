@@ -1036,7 +1036,8 @@ function restartQuiz() {
   document.querySelector("#video-loading").classList.remove("is-error");
 
   if (youtubePlayerReady) {
-    youtubePlayer.stopVideo();
+    youtubePlayer.pauseVideo();
+    youtubePlayer.seekTo(0, true);
   }
 
   if (musicPlayerReady) {
